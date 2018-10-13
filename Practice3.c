@@ -72,15 +72,21 @@ byte cel[8] = {
   
 };
 
-char buf[128];
-int bufPos = 0;
-
 // 핀 설정
 const int DHT_PIN = 9;
 const int PIEZO_PIN = 3;
 const int LED_PIN_1 = 6;
 const int LED_PIN_2 = 7;
 const int LED_PIN_3 = 8;
+
+// LED BLINK INTERVAL - LED 가 몇초 마다 깜빡이게 할지 정한다
+
+const int INTERVAL_LED1 = 500; // 0.5초마다 
+const int INTERVAL_LED2 = 1000; // 1초 마다
+const int INTERVAL_LED3 = 1500; // 1.5초 마다 
+
+unsigned long led1, led2, led3;
+bool on1, on2, on3;
 
 // LCD 변수 - LCD 디스플레이를 제어한다 
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
@@ -98,6 +104,10 @@ bool blinkSMS = false;
 bool blinkDoneSMS = false;
 bool blinkALM = false;
 bool blinkDoneALM = true;
+
+bool _blinkLED1 = true;
+bool _blinkLED2 = true;
+bool _blinkLED3 = true;
 
 String _str = "";
 String _alm = "";
@@ -129,6 +139,8 @@ void setup() {
   lcd.backlight(); // lcd의 백라이트 활성화
   lcd.write(byte(4));
   lcd.print("Unconnected!");// 연결전 화면
+  on1 = on2 = on3 = false;
+  led1 = led2 = led3 = millis();
 } 
 
 // 1번째 줄에 정보 현재 시간 및 상태 정보를 화면에 나타낸다 (현재 시간, 알림 텍스트, 온도)
@@ -210,7 +222,7 @@ void updateSMS(){
 
       }
     }
-  if (blink_count == 10){
+  if (blink_count == 10){ // 총 10번 깜빡인다 
     blink_count = -1;
     blinkDoneSMS = true;
   }
@@ -239,17 +251,58 @@ void updateALM(){
   }
 }
 
-void blinkLED1() {
-  digitalWrite(LED_PIN_1, HIGH);
+void blinkLED1(){
+  if (millis() - led1 >= INTERVAL_LED1 && _blinkLED1){
+    led1 = millis();
+    if(on1){
+      on1 = false;
+      digitalWrite(LED_PIN_1, HIGH);
+    }else{
+      on1 = true;
+      digitalWrite(LED_PIN_1, LOW);
+    }
+  }
 }
 
-void blinkLED2() {
-  digitalWrite(LED_PIN_1, HIGH);  
+void blinkLED2(){
+  if (millis() - led2 >= INTERVAL_LED2 && _blinkLED2){
+    led2 = millis();
+    digitalWrite(LED_PIN_2, HIGH);
+    if(on2){
+      on2 = false;
+      digitalWrite(LED_PIN_2, HIGH);
+    }else{
+      on2 = true;
+      digitalWrite(LED_PIN_2, LOW);
+    }
+ }
 }
 
-void blinkLED3() {
-  digitalWrite(LED_PIN_1, HIGH);
+void blinkLED3(){
+  if (millis() - led3 >= INTERVAL_LED3 && _blinkLED3){
+    led3 = millis();
+    digitalWrite(LED_PIN_3, HIGH);
+    if(on3){
+      on3 = false;
+      digitalWrite(LED_PIN_3, HIGH);
+    }else{
+      on3 = true;
+      digitalWrite(LED_PIN_3, LOW);
+    }
+  }
 }
+
+void turnOffLED1(){_blinkLED1 = false;}
+
+void turnOffLED2(){_blinkLED2 = false;}
+
+void turnOffLED3(){_blinkLED3 = false;}
+
+void turnOnLED1(){_blinkLED1 = true;}
+
+void turnOnLED2(){_blinkLED2 = true;}
+
+void turnOnLED3(){_blinkLED3 = true;}
 
 bool isinterrupt(){
   if (!blinkDoneSMS || blinkALM ){
@@ -267,36 +320,37 @@ void loop() {
     
     if(data == '\n'){
         // 문자열 끝 
-       Serial.println(_str);
-
+//       Serial.println(_str);
+      blinkLED3();
       if (_str[1] == '!'){
         _str.remove(0, 2); // from index 0 remove count of 2 (\n, !)
         updateTime(true, _str, temperature, isinterrupt());                
       }else if(_str[1] == '2'){
         // sms 수신
         blinkDoneSMS = false;
+        turnOnLED1();
+        blinkLED1();
         updateTime(true, _str, temperature, isinterrupt());
       }else if (_str[1] == '3'){
         // 알람 정보 수신 
         _str.remove(0, 2);
         _alm = _str;
-        Serial.println(_alm);
         blinkDoneALM = false;
-        blinkLED1();
+        turnOnLED2();
+        blinkLED2();
         updateTime(true, _str, temperature, isinterrupt());
       }else if (_str[1] == '4'){
         // 알람 끄기
         blinkDoneALM = true;
         blinkALM = false;
+        turnOffLED2();
         noTone(PIEZO_PIN);
       }
-      ble.write(humidity);
+      ble.write(humidity); // 온습도 데이터 전송
       _str = "";
     }
     _str += data;
-    updateStatus(!blinkDoneSMS, !blinkDoneALM, humidity, true);
-    
-    // 온습도 데이터 전송
+    updateStatus(!blinkDoneSMS, !blinkDoneALM, humidity, true);    
   }
   digitalWrite(13, LOW);
    

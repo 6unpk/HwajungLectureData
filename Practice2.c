@@ -87,6 +87,7 @@ const int INTERVAL_LED3 = 1500; // 1.5초 마다
 
 unsigned long led1, led2, led3;
 bool on1, on2, on3;
+
 // LCD 변수 - LCD 디스플레이를 제어한다 
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
 SoftwareSerial ble(11, 12);
@@ -120,6 +121,8 @@ void setup() {
   lcd.write(byte(4)); 
   lcd.setCursor(1, 0); // 1행 0열 부터 출력 
   lcd.print("Hello World!"); // 출력할 문구 (ASCII만 가능함)
+  on1 = on2 = on3 = false;
+  led1 = led2 = led3 = millis();
 } 
 
 void blinkLED1(){
