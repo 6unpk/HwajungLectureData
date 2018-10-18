@@ -90,6 +90,8 @@ bool on1, on2, on3;
 
 // LCD 변수 - LCD 디스플레이를 제어한다 
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
+// LiquidCrystal_I2C lcd(0x27, 16, 2); 
+// I2C 모듈의 납떔 상태에 따라 첫번쨰 파라미터 값이 달라짐
 SoftwareSerial ble(11, 12);
 
 // DHT 변수 - 온습도 센서를 제어한다
